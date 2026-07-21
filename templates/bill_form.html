@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>建立 Sandbox Bill</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #1a1a1a; }
+    h1 { font-size: 1.4rem; }
+    label { display: block; margin-top: 16px; font-weight: 600; }
+    select, input[type="number"], input[type="text"] { width: 100%; padding: 8px; margin-top: 4px; font-size: 1rem;
+      box-sizing: border-box; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 20px; }
+    .checkbox-row label { margin: 0; font-weight: 600; }
+    .errors { background: #fdecea; color: #a12a2a; padding: 10px 14px; border-radius: 6px; margin-top: 16px; }
+    .errors ul { margin: 0; padding-left: 20px; }
+    button { margin-top: 24px; padding: 10px 20px; border-radius: 6px; border: none; background: #2b6cb0;
+      color: #fff; font-size: 1rem; cursor: pointer; }
+    button:disabled { background: #a0aec0; cursor: not-allowed; }
+    a.back { display: inline-block; margin-top: 20px; color: #4a5568; }
+    .hint { font-size: 0.85rem; color: #666; font-weight: 400; }
+  </style>
+</head>
+<body>
+  <h1>建立 Sandbox Bill</h1>
+
+  {% if errors %}
+    <div class="errors">
+      <ul>
+        {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <form method="post" id="bill-form">
+    <label for="vendor_id">廠商（Vendor）</label>
+    <select name="vendor_id" id="vendor_id" required>
+      <option value="" disabled {% if not selected_vendor_id %}selected{% endif %}>請選擇廠商</option>
+      {% for v in vendors %}
+        <option value="{{ v.Id }}" {% if selected_vendor_id == v.Id %}selected{% endif %}>{{ v.DisplayName }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="account_id">費用科目（Expense Account）</label>
+    <select name="account_id" id="account_id" required>
+      <option value="" disabled {% if not selected_account_id %}selected{% endif %}>請選擇費用科目</option>
+      {% for a in accounts %}
+        <option value="{{ a.Id }}" {% if selected_account_id == a.Id %}selected{% endif %}>{{ a.Name }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="amount">金額</label>
+    <input type="number" name="amount" id="amount" step="0.01" min="0.01" value="{{ default_amount }}" required>
+
+    <label for="memo">備註（選填）</label>
+    <input type="text" name="memo" id="memo" value="{{ default_memo or '' }}">
+
+    <div class="checkbox-row">
+      <input type="checkbox" name="confirm_sandbox" id="confirm_sandbox" required>
+      <label for="confirm_sandbox">我確認這是 Sandbox 測試資料</label>
+    </div>
+    <div class="hint">此表單只能選擇既有廠商與科目，不會建立新的 Vendor 或 Account。</div>
+
+    <button type="submit" id="submit-btn" disabled>建立 Bill</button>
+  </form>
+
+  <a class="back" href="{{ url_for('index') }}">返回首頁</a>
+
+  <script>
+    const checkbox = document.getElementById("confirm_sandbox");
+    const submitBtn = document.getElementById("submit-btn");
+    const syncButtonState = () => { submitBtn.disabled = !checkbox.checked; };
+    checkbox.addEventListener("change", syncButtonState);
+    syncButtonState();
+  </script>
+</body>
+</html>

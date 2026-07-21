@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>QuickBooks Sandbox 自動化工具</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; color: #1a1a1a; }
+    h1 { font-size: 1.4rem; }
+    .status { padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; }
+    .status.connected { background: #e3f6e5; color: #1a7a2e; }
+    .status.disconnected { background: #fdecea; color: #a12a2a; }
+    .flash { padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; }
+    .flash.error { background: #fdecea; color: #a12a2a; }
+    .flash.success { background: #e3f6e5; color: #1a7a2e; }
+    .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    a.button, button { display: inline-block; padding: 10px 16px; border-radius: 6px; text-decoration: none;
+      background: #2b6cb0; color: #fff; border: none; font-size: 1rem; cursor: pointer; width: fit-content; }
+    a.button.secondary { background: #4a5568; }
+    .badge { font-weight: 400; font-size: 0.85rem; color: #555; }
+    footer { margin-top: 40px; font-size: 0.8rem; color: #888; }
+  </style>
+</head>
+<body>
+  <h1>QuickBooks Sandbox 自動化工具</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if connected %}
+    <div class="status connected">已連接 QuickBooks Sandbox（Realm ID: {{ realm_id }}）</div>
+    <div class="actions">
+      <a class="button" href="{{ url_for('company_info') }}">讀取 CompanyInfo</a>
+      <a class="button" href="{{ url_for('vendors') }}">列出 Vendor</a>
+      <a class="button" href="{{ url_for('accounts') }}">列出 Expense Account</a>
+      <a class="button" href="{{ url_for('new_bill') }}">建立 Sandbox Bill</a>
+    </div>
+  {% else %}
+    <div class="status disconnected">尚未連接 QuickBooks</div>
+    <div class="actions">
+      <a class="button" href="{{ url_for('connect') }}">Connect to QuickBooks</a>
+    </div>
+  {% endif %}
+
+  <footer>此工具僅使用 QuickBooks Online Sandbox，不會呼叫 Production API。</footer>
+</body>
+</html>
