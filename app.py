@@ -15,7 +15,7 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 
 import quickbooks_client as qbo
 import token_store
-from token_store import NoTokenError, RefreshTokenExpiredError, TokenData, TokenRefreshFailedError
+from token_store import TokenData, TokenStoreError
 
 load_dotenv()
 
@@ -50,7 +50,8 @@ def _get_session() -> Optional[qbo.QuickBooksSession]:
         return None
     try:
         token = token_store.get_valid_token(QBO_CLIENT_ID, QBO_CLIENT_SECRET)
-    except (NoTokenError, RefreshTokenExpiredError, TokenRefreshFailedError):
+    except TokenStoreError as exc:
+        logger.info("Not connected: %s", type(exc).__name__)
         return None
     return qbo.QuickBooksSession(token, QBO_CLIENT_ID, QBO_CLIENT_SECRET)
 
@@ -102,8 +103,8 @@ def callback() -> Any:
 
     try:
         token_store.exchange_code(code, realm_id, QBO_REDIRECT_URI, QBO_CLIENT_ID, QBO_CLIENT_SECRET)
-    except TokenRefreshFailedError as exc:
-        logger.error("Token exchange failed: %s", exc)
+    except TokenStoreError as exc:
+        logger.error("Token exchange failed: %s", type(exc).__name__)
         flash("無法完成 QuickBooks 授權，請稍後再試", "error")
         return redirect(url_for("index"))
 

@@ -1,23 +1,26 @@
-"""Local persistence and lifecycle management for QuickBooks OAuth tokens.
+"""Persistence and lifecycle management for QuickBooks OAuth tokens.
 
-Tokens are stored in a local ``token.json`` file for development purposes
-only. Access and refresh token *values* are never logged.
+Tokens are stored in Upstash Redis (accessed over its REST API) rather than
+the local filesystem, so the same code works whether the app runs on a
+long-lived local process or a stateless serverless platform like Vercel.
+Access and refresh token *values* are never logged.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from dataclasses import asdict, dataclass
-from pathlib import Path
 from typing import Any, Optional
 
 import requests
+from upstash_redis import Redis
 
 logger = logging.getLogger(__name__)
 
-TOKEN_FILE: Path = Path("token.json")
+TOKEN_KEY: str = "qbo:token"
 TOKEN_URL: str = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer"
 REQUEST_TIMEOUT: float = 15.0
 
@@ -63,24 +66,40 @@ def _mask(value: str) -> str:
     return f"{value[:4]}...(len={len(value)})"
 
 
-def load_token(path: Path = TOKEN_FILE) -> Optional[TokenData]:
-    if not path.exists():
+_redis_client: Optional[Redis] = None
+
+
+def _get_redis() -> Redis:
+    global _redis_client
+    if _redis_client is None:
+        url = os.environ.get("UPSTASH_REDIS_REST_URL")
+        token = os.environ.get("UPSTASH_REDIS_REST_TOKEN")
+        if not url or not token:
+            raise TokenStoreError(
+                "UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN is not set. "
+                "Copy .env.example to .env and fill in your Upstash Redis credentials."
+            )
+        _redis_client = Redis(url=url, token=token)
+    return _redis_client
+
+
+def load_token() -> Optional[TokenData]:
+    raw = _get_redis().get(TOKEN_KEY)
+    if raw is None:
         return None
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-        return TokenData(**raw)
+        return TokenData(**json.loads(raw))
     except (json.JSONDecodeError, TypeError, KeyError) as exc:
-        logger.warning("token.json is invalid or incomplete (%s); ignoring it", type(exc).__name__)
+        logger.warning("Stored token is invalid or incomplete (%s); ignoring it", type(exc).__name__)
         return None
 
 
-def save_token(token: TokenData, path: Path = TOKEN_FILE) -> None:
-    path.write_text(json.dumps(asdict(token), indent=2), encoding="utf-8")
+def save_token(token: TokenData) -> None:
+    _get_redis().set(TOKEN_KEY, json.dumps(asdict(token)))
 
 
-def clear_token(path: Path = TOKEN_FILE) -> None:
-    if path.exists():
-        path.unlink()
+def clear_token() -> None:
+    _get_redis().delete(TOKEN_KEY)
 
 
 def _post_token_request(client_id: str, client_secret: str, data: dict[str, str]) -> dict[str, Any]:
