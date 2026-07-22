@@ -22,29 +22,8 @@
 </head>
 <body>
   <h1>QuickBooks Sandbox 自動化工具</h1>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-      <div class="flash {{ category }}">{{ message }}</div>
-    {% endfor %}
-  {% endwith %}
-
-  {% if connected %}
-    <div class="status connected">已連接 QuickBooks Sandbox（Realm ID: {{ realm_id }}）</div>
-    <div class="actions">
-      <a class="button" href="{{ url_for('company_info') }}">讀取 CompanyInfo</a>
-      <a class="button" href="{{ url_for('vendors') }}">列出 Vendor</a>
-      <a class="button" href="{{ url_for('accounts') }}">列出 Expense Account</a>
-      <a class="button" href="{{ url_for('new_bill') }}">建立 Sandbox Bill</a>
-      <a class="button" href="{{ url_for('read') }}">讀取 Bill 列表</a>
-    </div>
-  {% else %}
-    <div class="status disconnected">尚未連接 QuickBooks</div>
-    <div class="actions">
-      <a class="button" href="{{ url_for('connect') }}">Connect to QuickBooks</a>
-    </div>
-  {% endif %}
-
+   <div>讀取 Bill 列表</div>
+  
   <footer>此工具僅使用 QuickBooks Online Sandbox，不會呼叫 Production API。</footer>
 </body>
 </html>

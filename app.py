@@ -104,14 +104,16 @@ def callback() -> Any:
     try:
         token_store.exchange_code(code, realm_id, QBO_REDIRECT_URI, QBO_CLIENT_ID, QBO_CLIENT_SECRET)
     except TokenStoreError as exc:
-        logger.error("Token exchange failed: %s", type(exc).__name__)
+        logger.error("Token exchange failed (%s): %s", type(exc).__name__, exc)
         flash("無法完成 QuickBooks 授權，請稍後再試", "error")
         return redirect(url_for("index"))
 
     flash("已成功連接 QuickBooks Sandbox", "success")
     return redirect(url_for("index"))
 
-
+@app.route("/read")
+def read() -> Any:  
+    return render_template("readbill.html")
 @app.route("/company-info")
 def company_info() -> Any:
     qb_session = _get_session()
@@ -241,6 +243,7 @@ def new_bill() -> Any:
         return render_template("result.html", title="建立 Bill 失敗", error=str(exc)), _status_code_for(exc)
 
     return render_template("result.html", title="Sandbox Bill 建立成功", data=bill)
+
 
 
 if __name__ == "__main__":
